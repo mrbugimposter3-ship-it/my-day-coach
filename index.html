@@ -154,6 +154,39 @@
   .prayer-card.active h3, .prayer-card.active .clock{color:#fff;}
   @keyframes pulse{0%,100%{box-shadow:4px 5px 0 rgba(45,36,56,.18), 0 0 0 0 rgba(142,68,173,.5);}50%{box-shadow:4px 5px 0 rgba(45,36,56,.18), 0 0 0 12px rgba(142,68,173,0);}}
 
+  /* ============ NOW CARD ============ */
+  .now-card{
+    background:linear-gradient(135deg,var(--purple),var(--green));
+    color:#fff; border:3px solid var(--ink);
+    border-radius:24px 9px 26px 11px; padding:16px 22px; box-shadow:var(--shadow);
+    animation:slidein .5s ease both, pulse 2.2s infinite;
+    display:flex; flex-wrap:wrap; align-items:center; gap:14px;
+  }
+  .now-label{
+    font-family:'Shantell Sans',cursive; font-weight:700; font-size:1.05rem;
+    background:rgba(255,255,255,.25); padding:4px 14px;
+    border-radius:14px 5px 16px 6px; transform:rotate(-2deg);
+    animation:blink 1.4s ease-in-out infinite;
+  }
+  @keyframes blink{0%,100%{opacity:1;}50%{opacity:.45;}}
+  .now-activity{flex:1; font-size:1.5rem; font-weight:700; min-width:200px;
+    text-shadow:2px 2px 0 rgba(0,0,0,.25);}
+  .now-right{text-align:right;}
+  .now-count{font-size:1.6rem; font-weight:700; font-variant-numeric:tabular-nums;}
+  .now-sub{font-size:.9rem; opacity:.9;}
+  .now-progress{
+    width:100%; height:14px; background:rgba(255,255,255,.25);
+    border-radius:10px; overflow:hidden; border:2px solid rgba(255,255,255,.6);
+  }
+  .now-progress-fill{height:100%; width:0%; background:#fff; transition:width 1s linear;}
+  .slot.now-row{
+    background:linear-gradient(90deg,var(--green-soft),#fff);
+    border-color:var(--purple); border-width:3px;
+    box-shadow:0 0 0 4px rgba(142,68,173,.25);
+    animation:pulse 2s infinite;
+  }
+  .slot.now-row .time{color:var(--green-dark);}
+
   /* ============ QUOTE / JOKE ============ */
   .joke-box{
     background:var(--green-soft); border:3px dashed var(--green-dark);
@@ -180,6 +213,17 @@
 </header>
 
 <main>
+  <!-- LIVE NOW CARD -->
+  <section class="now-card" id="nowCard" style="animation:none;">
+    <span class="now-label">● RIGHT NOW</span>
+    <div class="now-activity" id="nowActivity">Build your day first! ✨</div>
+    <div class="now-right">
+      <div class="now-count" id="nowCount">--:--</div>
+      <div class="now-sub" id="nowSub">until this block ends</div>
+    </div>
+    <div class="now-progress"><div class="now-progress-fill" id="nowFill"></div></div>
+  </section>
+
   <!-- SETTINGS -->
   <section class="panel">
     <h2><span class="emoji">⚙️</span> Prayer Times (each prayer = 1-hour window)</h2>
@@ -300,6 +344,7 @@ function fmt(min){ min=((min%1440)+1440)%1440; const h=Math.floor(min/60), m=min
   return `${h12}:${String(m).padStart(2,"0")} ${ap}`; }
 
 /* ============ SCHEDULE BUILDER ============ */
+let schedule = []; // kept for the live NOW card
 function buildSchedule(){
   const isFriday = new Date().getDay()===5;
   document.getElementById("fridayBadge").classList.toggle("show", isFriday);
@@ -350,8 +395,10 @@ function buildSchedule(){
 
   // interleave fixed blocks into final timeline
   const all = [...fixed.map(f=>({...f})), ...slots].sort((a,b)=>a.start-b.start);
+  schedule = all.map(s=>({...s}));
   renderSchedule(all);
   renderPrayerCards(times, isFriday);
+  updateNow();
 }
 
 /* ============ RENDER ============ */
@@ -393,6 +440,47 @@ function updateProgress(){
   document.getElementById("progressText").textContent =
     pct===100 ? "100% — LEGENDARY DAY COMPLETE! 🏆🎉" : pct+"% of today conquered 💪";
 }
+
+/* ============ LIVE NOW CARD ============ */
+function nowMin(){ const d=new Date(); return d.getHours()*60 + d.getMinutes() + d.getSeconds()/60; }
+
+function updateNow(){
+  if(!schedule.length) return;
+  const n = nowMin();
+  // current slot (or next upcoming if between slots)
+  let cur = schedule.find(s=> n >= s.start && n < s.end);
+  let nxt = schedule.find(s=> s.start > n);
+  const actEl = document.getElementById("nowActivity");
+  const cntEl = document.getElementById("nowCount");
+  const subEl = document.getElementById("nowSub");
+  const fillEl = document.getElementById("nowFill");
+
+  // highlight the live row in the timeline
+  document.querySelectorAll("#timeline .slot").forEach(el=>el.classList.remove("now-row"));
+
+  if(cur){
+    const id = cur.start+"|"+cur.name;
+    const rowEl = [...document.querySelectorAll("#timeline .slot")].find(el=>el.querySelector(".checkbox")?.dataset.id===id);
+    if(rowEl) rowEl.classList.add("now-row");
+    actEl.textContent = cur.name;
+    const leftSec = Math.round((cur.end - n)*60);
+    cntEl.textContent = fmtTimer(leftSec);
+    subEl.textContent = "until "+fmt(cur.end);
+    fillEl.style.width = Math.min(100, ((n-cur.start)/(cur.end-cur.start))*100)+"%";
+  } else if(nxt){
+    actEl.textContent = "⏳ Free gap — next up: "+nxt.name;
+    const leftSec = Math.round((nxt.start - n)*60);
+    cntEl.textContent = fmtTimer(leftSec);
+    subEl.textContent = "until it starts";
+    fillEl.style.width = "0%";
+  } else {
+    actEl.textContent = "🌙 Day complete — wind down & sleep well!";
+    cntEl.textContent = "--:--";
+    subEl.textContent = "see you after Fajr";
+    fillEl.style.width = "100%";
+  }
+}
+setInterval(updateNow, 1000);
 
 /* ============ PRAYER TIMERS (60-min cap) ============ */
 const timers = {};
@@ -439,6 +527,7 @@ function getTime(key){ return toMin(document.getElementById("t-"+key).value); }
 buildTicker();
 buildSchedule();
 showJoke();
+updateNow();
 document.getElementById("buildBtn").addEventListener("click", buildSchedule);
 </script>
 </body>
