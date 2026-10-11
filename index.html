@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌙 My Day Coach — Green &amp; Purple Edition</title>
+<link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Shantell+Sans:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --green:#2fbf71; --green-dark:#1d7a4a; --green-soft:#d8f5e6;
+    --purple:#8e44ad; --purple-dark:#5b2c87; --purple-soft:#ead9f7;
+    --ink:#2d2438; --paper:#faf7ff; --card:#ffffff;
+    --shadow: 4px 5px 0 rgba(45,36,56,.18);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'Patrick Hand', 'Comic Sans MS', cursive;
+    background:
+      radial-gradient(circle at 8% 12%, rgba(142,68,173,.12) 0 140px, transparent 141px),
+      radial-gradient(circle at 92% 20%, rgba(47,191,113,.14) 0 120px, transparent 121px),
+      radial-gradient(circle at 70% 90%, rgba(142,68,173,.10) 0 160px, transparent 161px),
+      var(--paper);
+    color:var(--ink); min-height:100vh;
+  }
+  h1,h2,h3{font-family:'Shantell Sans','Patrick Hand',cursive;}
+
+  /* ============ TICKER ============ */
+  .ticker{
+    position:sticky; top:0; z-index:50;
+    background:linear-gradient(90deg, var(--purple-dark), var(--green-dark), var(--purple-dark));
+    color:#fff; overflow:hidden; white-space:nowrap;
+    border-bottom:3px solid var(--ink);
+    padding:7px 0; font-size:1.05rem;
+  }
+  .ticker-track{display:inline-block; animation:scroll 45s linear infinite;}
+  .ticker:hover .ticker-track{animation-play-state:paused;}
+  .ticker-track span{margin:0 26px;}
+  .ticker-track .tag{
+    display:inline-block; padding:0 10px; margin-right:6px; border-radius:12px;
+    background:rgba(255,255,255,.22); font-weight:700; font-size:.9rem;
+    transform:rotate(-2deg);
+  }
+  .tag.news{background:#e74c3c;} .tag.weather{background:#2980b9;}
+  .tag.steam{background:#1b2838;} .tag.xbox{background:#107c10;}
+  .tag.ps{background:#003791;} .tag.joke{background:var(--green);}
+  @keyframes scroll{from{transform:translateX(100vw);} to{transform:translateX(-100%);}}
+
+  /* ============ HEADER ============ */
+  header{text-align:center; padding:22px 10px 6px;}
+  header h1{
+    font-size:2.6rem; color:var(--purple-dark); display:inline-block;
+    transform:rotate(-1.5deg); animation:floaty 4s ease-in-out infinite;
+    text-shadow:2px 3px 0 var(--green-soft);
+  }
+  @keyframes floaty{0%,100%{transform:rotate(-1.5deg) translateY(0);}50%{transform:rotate(-1.5deg) translateY(-7px);}}
+  header p{font-size:1.15rem; color:var(--green-dark);}
+  .friday-badge{
+    display:none; margin:6px auto 0; width:fit-content; padding:4px 18px;
+    background:var(--green); color:#fff; border:3px solid var(--ink);
+    border-radius:30px 18px 26px 14px; transform:rotate(2deg);
+    box-shadow:var(--shadow); animation:pop .5s ease;
+  }
+  .friday-badge.show{display:block;}
+  @keyframes pop{from{transform:scale(0) rotate(2deg);}to{transform:scale(1) rotate(2deg);}}
+
+  /* ============ LAYOUT ============ */
+  main{max-width:1150px; margin:0 auto; padding:14px 18px 60px; display:grid; gap:18px;}
+  .panel{
+    background:var(--card); border:3px solid var(--ink);
+    border-radius:22px 8px 26px 10px; padding:18px 20px; box-shadow:var(--shadow);
+    animation:slidein .5s ease both;
+  }
+  .panel:nth-child(2){animation-delay:.08s;} .panel:nth-child(3){animation-delay:.16s;} .panel:nth-child(4){animation-delay:.24s;}
+  @keyframes slidein{from{opacity:0; transform:translateY(24px) rotate(.4deg);}to{opacity:1;}}
+  .panel h2{color:var(--purple); margin-bottom:10px; font-size:1.5rem;}
+  .panel h2 .emoji{filter:drop-shadow(1px 1px 0 var(--green-soft));}
+
+  /* ============ BUTTONS / CONTROLS ============ */
+  .btn{
+    font-family:inherit; font-size:1.15rem; cursor:pointer;
+    background:var(--green); color:#fff; border:3px solid var(--ink);
+    border-radius:16px 6px 18px 8px; padding:9px 22px; box-shadow:var(--shadow);
+    transition:transform .15s, box-shadow .15s; font-weight:700;
+  }
+  .btn:hover{transform:translate(-2px,-3px) rotate(-1deg); box-shadow:6px 8px 0 rgba(45,36,56,.18);}
+  .btn:active{transform:translate(2px,2px); box-shadow:1px 1px 0 rgba(45,36,56,.18);}
+  .btn.purple{background:var(--purple);}
+  .btn.small{font-size:.95rem; padding:5px 14px;}
+
+  .settings{display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:12px;}
+  .settings label{font-weight:700; color:var(--purple-dark);}
+  .settings input{
+    font-family:inherit; font-size:1rem; width:92px; padding:4px 8px;
+    border:2.5px solid var(--ink); border-radius:10px 4px 12px 6px; background:var(--purple-soft);
+  }
+
+  /* ============ SCHEDULE ============ */
+  .timeline{display:grid; gap:9px;}
+  .slot{
+    display:flex; align-items:center; gap:12px; padding:9px 14px;
+    border:2.5px solid var(--ink); border-radius:14px 5px 16px 6px;
+    background:#fff; animation:slidein .4s ease both;
+    transition:transform .15s;
+  }
+  .slot:hover{transform:translateX(6px) rotate(-.3deg);}
+  .slot .time{font-weight:700; min-width:150px; color:var(--purple-dark);}
+  .slot .what{flex:1; font-size:1.12rem;}
+  .slot.prayer{
+    background:linear-gradient(90deg,var(--purple-soft),var(--green-soft));
+    border-width:3px; position:relative;
+  }
+  .slot.prayer .what::after{
+    content:"🕌 1-hour window"; font-size:.8rem; color:var(--purple-dark);
+    display:block; font-weight:700;
+  }
+  .slot.jummah{background:linear-gradient(90deg,var(--green),var(--purple)); color:#fff;}
+  .slot.jummah .time{color:#fff;}
+  .slot.sleep{background:#efe7f7;}
+  .slot.done .what{text-decoration:line-through; opacity:.55;}
+  .checkbox{
+    width:26px; height:26px; min-width:26px; border:3px solid var(--ink);
+    border-radius:8px 3px 9px 4px; background:#fff; cursor:pointer; position:relative;
+    transition:transform .1s;
+  }
+  .checkbox:hover{transform:scale(1.15) rotate(3deg);}
+  .checkbox.checked{background:var(--green);}
+  .checkbox.checked::after{
+    content:"✔"; position:absolute; inset:0; display:grid; place-items:center;
+    color:#fff; font-weight:bold; animation:pop .2s ease;
+  }
+  .progress-wrap{margin-top:14px;}
+  .progress-bar{
+    height:22px; border:3px solid var(--ink); border-radius:12px 5px 14px 6px;
+    background:var(--purple-soft); overflow:hidden;
+  }
+  .progress-fill{
+    height:100%; width:0%;
+    background:repeating-linear-gradient(45deg,var(--green) 0 12px, var(--purple) 12px 24px);
+    transition:width .5s ease;
+  }
+  .progress-text{margin-top:5px; font-weight:700; color:var(--purple-dark);}
+
+  /* ============ PRAYER TIMERS ============ */
+  .prayer-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px;}
+  .prayer-card{
+    border:3px solid var(--ink); border-radius:16px 6px 18px 8px; padding:12px;
+    text-align:center; background:var(--purple-soft); box-shadow:var(--shadow);
+    transition:transform .15s;
+  }
+  .prayer-card:hover{transform:translateY(-4px) rotate(-1deg);}
+  .prayer-card h3{color:var(--purple-dark); font-size:1.2rem;}
+  .prayer-card .clock{font-size:1.5rem; font-weight:700; color:var(--green-dark); margin:6px 0;}
+  .prayer-card.active{background:linear-gradient(135deg,var(--green),var(--purple)); color:#fff; animation:pulse 1.6s infinite;}
+  .prayer-card.active h3, .prayer-card.active .clock{color:#fff;}
+  @keyframes pulse{0%,100%{box-shadow:4px 5px 0 rgba(45,36,56,.18), 0 0 0 0 rgba(142,68,173,.5);}50%{box-shadow:4px 5px 0 rgba(45,36,56,.18), 0 0 0 12px rgba(142,68,173,0);}}
+
+  /* ============ QUOTE / JOKE ============ */
+  .joke-box{
+    background:var(--green-soft); border:3px dashed var(--green-dark);
+    border-radius:20px 7px 22px 9px; padding:14px; font-size:1.2rem; text-align:center;
+  }
+  .joke-box .answer{color:var(--purple-dark); font-weight:700;}
+
+  footer{text-align:center; padding:16px; color:var(--purple-dark); font-size:1rem;}
+  @media (max-width:640px){
+    .slot{flex-wrap:wrap;} .slot .time{min-width:100%;}
+    header h1{font-size:2rem;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== BREAKING NEWS / WEATHER / GAMES / JOKES TICKER ===== -->
+<div class="ticker"><div class="ticker-track" id="tickerTrack"></div></div>
+
+<header>
+  <h1>🌙 My Day Coach ☀️</h1>
+  <p>Your hand-drawn daily planner — faith, fun, fitness &amp; building The Base 🚀</p>
+  <div class="friday-badge" id="fridayBadge">🕌 Jumu'ah Mubarak! — Jummah is on today's plan</div>
+</header>
+
+<main>
+  <!-- SETTINGS -->
+  <section class="panel">
+    <h2><span class="emoji">⚙️</span> Prayer Times (each prayer = 1-hour window)</h2>
+    <div class="settings">
+      <label>Fajr <input type="time" id="t-fajr" value="05:00"></label>
+      <label>Dhuhr <input type="time" id="t-dhuhr" value="12:30"></label>
+      <label>Asr <input type="time" id="t-asr" value="15:30"></label>
+      <label>Maghrib <input type="time" id="t-maghrib" value="18:30"></label>
+      <label>Isha <input type="time" id="t-isha" value="19:45"></label>
+      <label>Sleep at <input type="time" id="t-sleep" value="22:30"></label>
+      <button class="btn purple small" id="buildBtn">✨ Build My Day!</button>
+    </div>
+  </section>
+
+  <!-- SCHEDULE -->
+  <section class="panel">
+    <h2><span class="emoji">🗓️</span> How to Spend Your Day</h2>
+    <div class="timeline" id="timeline"></div>
+    <div class="progress-wrap">
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="progress-text" id="progressText">0% of today conquered 💪</div>
+    </div>
+  </section>
+
+  <!-- PRAYER TIMERS -->
+  <section class="panel">
+    <h2><span class="emoji">🕌</span> Prayer Timers (60-minute limit each)</h2>
+    <div class="prayer-grid" id="prayerGrid"></div>
+  </section>
+
+  <!-- JOKE -->
+  <section class="panel">
+    <h2><span class="emoji">😂</span> Joke Break</h2>
+    <div class="joke-box" id="jokeBox">Press the button for a giggle!</div>
+    <div style="text-align:center; margin-top:10px;">
+      <button class="btn small" id="jokeBtn">🤣 Tell me another</button>
+    </div>
+  </section>
+</main>
+
+<footer>Made with 💚 and 💜 — Deen, Games, Gains &amp; The Base • Jummah special every Friday</footer>
+
+<script>
+/* ============================================================
+   ACTIVITIES — the wishlist that fills gaps between prayers
+   ============================================================ */
+const ACTIVITIES = [
+  {name:"🛁 Shower (fresh & clean)",           mins:30,  after:"fajr",   tag:"selfcare"},
+  {name:"📖 Read Quran (tilawah)",             mins:30,  after:"fajr",   tag:"deen"},
+  {name:"🧠 Memorize Quran (new ayat + review)",mins:45, after:"fajr",   tag:"deen"},
+  {name:"💪 Gym (lift heavy, stay humble)",    mins:75,  tag:"body"},
+  {name:"🚀 Help Build The Base (Mars-style real-world house/depot)", mins:90, tag:"build"},
+  {name:"🛠️ Creating Apps (code your next hit)",mins:120, tag:"build"},
+  {name:"📱 Using the app YOU made (dogfood it!)", mins:20, tag:"build"},
+  {name:"⚔️ World of Warcraft raid/dungeons",  mins:50,  tag:"game"},
+  {name:"🎯 Halo (Spartan time)",              mins:40,  tag:"game"},
+  {name:"🏰 Clash of Clans (attacks + clan wars)", mins:25, tag:"game"},
+  {name:"📺 Watching YouTube",                 mins:45,  tag:"fun"},
+  {name:"😴 Nap (power-up recharge)",          mins:30,  tag:"rest"},
+  {name:"🧖 Body Rest — spa / massage / stretch", mins:45, tag:"rest"},
+];
+
+const PRAYERS = [
+  {key:"fajr",   name:"Fajr 🌅"},
+  {key:"dhuhr",  name:"Dhuhr ☀️"},
+  {key:"asr",    name:"Asr 🌤️"},
+  {key:"maghrib",name:"Maghrib 🌇"},
+  {key:"isha",   name:"Isha 🌙"},
+];
+
+/* ============ TICKER CONTENT ============ */
+const TICKER = [
+  {tag:"news",    cls:"news",    text:"BREAKING: New exoplanet confirmed — scientists say 'definitely no Wi-Fi there yet'"},
+  {tag:"weather", cls:"weather", text:"☀️ Weather: sunny with a chance of productivity"},
+  {tag:"steam",   cls:"steam",   text:"STEAM: Midweek Madness deals live — wishlist prices dropping!"},
+  {tag:"xbox",    cls:"xbox",    text:"XBOX: Game Pass additions dropping this week"},
+  {tag:"ps",      cls:"ps",      text:"PLAYSTATION: New PSN sale + State of Play highlights trending"},
+  {tag:"microsoft",cls:"xbox",   text:"MICROSOFT: Windows update improves gaming performance"},
+  {tag:"joke",    cls:"joke",    text:"😂 Why did the gamer bring a ladder to school? To reach the HIGH SCORES!"},
+  {tag:"weather", cls:"weather", text:"🌙 Evening: clear skies, perfect for Maghrib and a Maghrib walk"},
+  {tag:"steam",   cls:"steam",   text:"STEAM: New releases chart updating — indie gems spotted!"},
+  {tag:"joke",    cls:"joke",    text:"😂 I told my PC I needed a break — now it won't stop sending me KitKat ads."},
+  {tag:"news",    cls:"news",    text:"BREAKING: Local hero completes Quran memorization goal — community proud! 🕌"},
+  {tag:"ps",      cls:"ps",      text:"PLAYSTATION: Halo-style sci-fi shooters trending this month"},
+];
+
+function buildTicker(){
+  const track = document.getElementById("tickerTrack");
+  const round1 = TICKER.map(t=>`<span><span class="tag ${t.cls}">${t.tag.toUpperCase()}</span>${t.text}</span>`).join("");
+  track.innerHTML = round1 + round1; // loop seamlessly
+}
+
+/* ============ JOKES ============ */
+const JOKES = [
+  ["Why don't skeletons ever go to the gym?","They don't have the guts! 💀"],
+  ["What do you call a Muslim gamer?","A prayer-ctioner... no wait — just focus: game after Isha! 🎮🕌"],
+  ["Why did the Clash of Clans builder go to therapy?","Too many walls up! 🏰"],
+  ["Why did the Halo Spartan cross the road?","To finish the fight. 🎯"],
+  ["What's a WoW player's favorite type of music?","Heavy metal... gear. ⚔️"],
+  ["Why did the developer go broke?","Because he used up all his cache! 🛠️"],
+  ["Why did the astronaut bring a toolkit to Mars?","To help build The Base, obviously! 🚀"],
+  ["What do you call a nap in a spaceship?","A launch break. 😴"],
+  ["Why was the smartphone wearing glasses?","It lost all its contacts. 📱"],
+  ["Why did the steam deck apply for a job?","It wanted to be a HAND-held hero! 🎮"],
+];
+let jokeIdx = Math.floor(Math.random()*JOKES.length);
+function showJoke(){
+  const [q,a] = JOKES[jokeIdx % JOKES.length]; jokeIdx++;
+  document.getElementById("jokeBox").innerHTML =
+    `${q}<div class="answer">${a}</div>`;
+}
+document.getElementById("jokeBtn").addEventListener("click", showJoke);
+
+/* ============ TIME HELPERS ============ */
+function toMin(hhmm){ const [h,m]=hhmm.split(":").map(Number); return h*60+m; }
+function fmt(min){ min=((min%1440)+1440)%1440; const h=Math.floor(min/60), m=min%60;
+  const ap = h>=12?"PM":"AM"; let h12=h%12; if(h12===0)h12=12;
+  return `${h12}:${String(m).padStart(2,"0")} ${ap}`; }
+
+/* ============ SCHEDULE BUILDER ============ */
+function buildSchedule(){
+  const isFriday = new Date().getDay()===5;
+  document.getElementById("fridayBadge").classList.toggle("show", isFriday);
+
+  const times = {};
+  PRAYERS.forEach(p=> times[p.key] = toMin(document.getElementById("t-"+p.key).value));
+  const sleepAt = toMin(document.getElementById("t-sleep").value);
+
+  // Fixed blocks: sleep + prayer windows (60 min each). Jummah = 2h Friday Dhuhr.
+  const fixed = [{start: sleepAt, end: sleepAt + 390, name:"😴 Sleep (recharge mode)", cls:"sleep"}];
+  PRAYERS.forEach(p=>{
+    const dur = (isFriday && p.key==="dhuhr") ? 120 : 60;
+    fixed.push({start: times[p.key], end: times[p.key]+dur, name:"🕌 "+p.name+(isFriday&&p.key==="dhuhr"?" — JUMMAH! Khutbah + Salah":" — salah + dhikr"), cls:"prayer"+(isFriday&&p.key==="dhuhr"?" jummah":"")});
+  });
+  fixed.sort((a,b)=>a.start-b.start);
+
+  // Find free gaps (24h from sleep-start to next-day sleep-start), fill with activities
+  let cursor = sleepAt + 390; // wake up
+  const slots = [];
+  const dayEnd = sleepAt + 1440;
+  let actIdx = 0;
+  const pool = ACTIVITIES.slice();
+
+  while(cursor < dayEnd - 10){
+    const nextFixed = fixed.find(f=> f.start >= cursor);
+    const gapEnd = nextFixed ? Math.min(nextFixed.start, dayEnd) : dayEnd;
+    let gap = gapEnd - cursor;
+    if(gap < 15){ cursor = Math.max(cursor, nextFixed ? nextFixed.end : gapEnd); continue; }
+
+    // pick next activity that fits (with 15-min chill buffer in long gaps)
+    let placed = false;
+    for(let tries=0; tries<pool.length; tries++){
+      const a = pool[actIdx % pool.length]; actIdx++;
+      if(a.mins <= gap - (gap>60?10:0)){
+        slots.push({start:cursor, end:cursor+a.mins, name:a.name, cls:""});
+        cursor += a.mins + (gap-a.mins>40 ? 10 : 0); // small buffer
+        placed = true; break;
+      }
+    }
+    if(!placed){
+      const mins = Math.min(gap, 60);
+      slots.push({start:cursor, end:cursor+mins, name:"🧘 Free time / family / reflect", cls:""});
+      cursor += mins;
+    }
+    // merge duplicates: skip rest of fixed block
+    if(nextFixed && cursor < nextFixed.end) cursor = nextFixed.end;
+  }
+
+  // interleave fixed blocks into final timeline
+  const all = [...fixed.map(f=>({...f})), ...slots].sort((a,b)=>a.start-b.start);
+  renderSchedule(all);
+  renderPrayerCards(times, isFriday);
+}
+
+/* ============ RENDER ============ */
+let todayKey = new Date().toISOString().slice(0,10);
+let done = JSON.parse(localStorage.getItem("mdc-done-"+todayKey) || "[]");
+
+function renderSchedule(all){
+  const tl = document.getElementById("timeline");
+  tl.innerHTML = "";
+  all.forEach((s,i)=>{
+    const row = document.createElement("div");
+    row.className = "slot "+(s.cls||"");
+    row.style.animationDelay = (i*0.04)+"s";
+    const id = s.start+"|"+s.name;
+    const isDone = done.includes(id);
+    row.innerHTML = `
+      <div class="time">${fmt(s.start)} – ${fmt(s.end)}</div>
+      <div class="what">${s.name}</div>
+      <div class="checkbox ${isDone?"checked":""}" data-id="${id}"></div>`;
+    tl.appendChild(row);
+  });
+  tl.querySelectorAll(".checkbox").forEach(cb=>{
+    cb.addEventListener("click", ()=>{
+      cb.classList.toggle("checked");
+      const id = cb.dataset.id;
+      if(cb.classList.contains("checked")){ if(!done.includes(id)) done.push(id); }
+      else done = done.filter(d=>d!==id);
+      localStorage.setItem("mdc-done-"+todayKey, JSON.stringify(done));
+      updateProgress();
+    });
+  });
+  updateProgress();
+}
+
+function updateProgress(){
+  const total = document.querySelectorAll("#timeline .checkbox").length || 1;
+  const pct = Math.round(done.length/total*100);
+  document.getElementById("progressFill").style.width = pct+"%";
+  document.getElementById("progressText").textContent =
+    pct===100 ? "100% — LEGENDARY DAY COMPLETE! 🏆🎉" : pct+"% of today conquered 💪";
+}
+
+/* ============ PRAYER TIMERS (60-min cap) ============ */
+const timers = {};
+function renderPrayerCards(times, isFriday){
+  const grid = document.getElementById("prayerGrid");
+  grid.innerHTML = "";
+  PRAYERS.forEach(p=>{
+    const card = document.createElement("div");
+    card.className = "prayer-card";
+    card.id = "pc-"+p.key;
+    const special = isFriday && p.key==="dhuhr" ? "<div style='font-size:.85rem'>Jummah edition 🕌</div>" : "";
+    card.innerHTML = `<h3>${p.name}</h3>${special}
+      <div class="clock">${fmt(times[p.key])}</div>
+      <button class="btn small purple">Start ⏳</button>
+      <div style="font-size:.85rem; margin-top:4px;">60:00 limit</div>`;
+    card.querySelector("button").addEventListener("click", ()=> startPrayer(p.key));
+    grid.appendChild(card);
+  });
+  Object.keys(timers).forEach(k=>{ clearInterval(timers[k]); delete timers[k]; });
+}
+
+function startPrayer(key){
+  if(timers[key]) return; // already running
+  const card = document.getElementById("pc-"+key);
+  card.classList.add("active");
+  const clock = card.querySelector(".clock");
+  let left = 3600; // 60-minute cap
+  timers[key] = setInterval(()=>{
+    left--;
+    clock.textContent = fmtTimer(left);
+    if(left<=0){
+      clearInterval(timers[key]); delete timers[key];
+      card.classList.remove("active");
+      clock.textContent = "Time's up ✅";
+      setTimeout(()=>{ clock.textContent = fmt(getTime(key)); }, 4000);
+    }
+  }, 1000);
+  clock.textContent = "60:00";
+}
+function fmtTimer(s){ const m=Math.floor(s/60), ss=s%60; return `${m}:${String(ss).padStart(2,"0")}`; }
+function getTime(key){ return toMin(document.getElementById("t-"+key).value); }
+
+/* ============ INIT ============ */
+buildTicker();
+buildSchedule();
+showJoke();
+document.getElementById("buildBtn").addEventListener("click", buildSchedule);
+</script>
+</body>
+</html>
