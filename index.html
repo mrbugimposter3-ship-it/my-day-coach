@@ -352,49 +352,54 @@ function buildSchedule(){
   const times = {};
   PRAYERS.forEach(p=> times[p.key] = toMin(document.getElementById("t-"+p.key).value));
   const sleepAt = toMin(document.getElementById("t-sleep").value);
+  const wake = (sleepAt + 390) % 1440;          // ~6.5h sleep, in real 0-1440 clock minutes
+  const dayEnd = sleepAt;                        // bedtime tonight
 
-  // Fixed blocks: sleep + prayer windows (60 min each). Jummah = 2h Friday Dhuhr.
-  const fixed = [{start: sleepAt, end: sleepAt + 390, name:"😴 Sleep (recharge mode)", cls:"sleep"}];
-  PRAYERS.forEach(p=>{
+  // Prayer windows (60 min each; Jummah = 2h Friday Dhuhr) in real clock minutes
+  const prayerBlocks = PRAYERS.map(p=>{
     const dur = (isFriday && p.key==="dhuhr") ? 120 : 60;
-    fixed.push({start: times[p.key], end: times[p.key]+dur, name:"🕌 "+p.name+(isFriday&&p.key==="dhuhr"?" — JUMMAH! Khutbah + Salah":" — salah + dhikr"), cls:"prayer"+(isFriday&&p.key==="dhuhr"?" jummah":"")});
+    const label = "🕌 "+p.name+(isFriday&&p.key==="dhuhr"?" — JUMMAH! Khutbah + Salah":" — salah + dhikr");
+    return {start: times[p.key], end: (times[p.key]+dur)%1440, name: label, cls:"prayer"+(isFriday&&p.key==="dhuhr"?" jummah":"")};
   });
-  fixed.sort((a,b)=>a.start-b.start);
+  const sleepBlock = {start: sleepAt, end: wake, name:"😴 Sleep (recharge mode)", cls:"sleep", overnight:true};
 
-  // Find free gaps (24h from sleep-start to next-day sleep-start), fill with activities
-  let cursor = sleepAt + 390; // wake up
+  // Fill the awake hours (wake -> bedtime) with activities around the prayers
   const slots = [];
-  const dayEnd = sleepAt + 1440;
   let actIdx = 0;
   const pool = ACTIVITIES.slice();
-
-  while(cursor < dayEnd - 10){
-    const nextFixed = fixed.find(f=> f.start >= cursor);
-    const gapEnd = nextFixed ? Math.min(nextFixed.start, dayEnd) : dayEnd;
-    let gap = gapEnd - cursor;
-    if(gap < 15){ cursor = Math.max(cursor, nextFixed ? nextFixed.end : gapEnd); continue; }
-
-    // pick next activity that fits (with 15-min chill buffer in long gaps)
-    let placed = false;
-    for(let tries=0; tries<pool.length; tries++){
-      const a = pool[actIdx % pool.length]; actIdx++;
-      if(a.mins <= gap - (gap>60?10:0)){
-        slots.push({start:cursor, end:cursor+a.mins, name:a.name, cls:""});
-        cursor += a.mins + (gap-a.mins>40 ? 10 : 0); // small buffer
-        placed = true; break;
+  function fillGap(a, b){
+    let cur = a;
+    while(cur < b - 10){
+      let placed = false;
+      for(let tries=0; tries<pool.length; tries++){
+        const act = pool[actIdx++ % pool.length];
+        if(act.mins <= b - cur - (b-cur>60?10:0)){
+          slots.push({start:cur, end:cur+act.mins, name:act.name, cls:""});
+          cur += act.mins + (b-cur-act.mins>40 ? 10 : 0); // small buffer
+          placed = true; break;
+        }
+      }
+      if(!placed){
+        const mins = Math.min(60, b-cur);
+        slots.push({start:cur, end:cur+mins, name:"🧘 Free time / family / reflect", cls:""});
+        cur += mins;
       }
     }
-    if(!placed){
-      const mins = Math.min(gap, 60);
-      slots.push({start:cursor, end:cursor+mins, name:"🧘 Free time / family / reflect", cls:""});
-      cursor += mins;
-    }
-    // merge duplicates: skip rest of fixed block
-    if(nextFixed && cursor < nextFixed.end) cursor = nextFixed.end;
   }
 
-  // interleave fixed blocks into final timeline
-  const all = [...fixed.map(f=>({...f})), ...slots].sort((a,b)=>a.start-b.start);
+  let cursor = wake;
+  for(const p of prayerBlocks.slice().sort((x,y)=>x.start-y.start)){
+    if(p.end <= cursor) continue;               // prayer already passed this morning
+    if(p.start >= dayEnd) break;                // prayer after bedtime — skip
+    if(p.start > cursor) fillGap(cursor, p.start);
+    slots.push(p);
+    cursor = p.end;
+    if(cursor >= dayEnd) break;
+  }
+  if(cursor < dayEnd) fillGap(cursor, dayEnd);
+
+  // Final timeline: chronological, ending with the overnight sleep block
+  const all = [...slots, sleepBlock];
   schedule = all.map(s=>({...s}));
   renderSchedule(all);
   renderPrayerCards(times, isFriday);
@@ -448,8 +453,12 @@ function updateNow(){
   if(!schedule.length) return;
   const n = nowMin();
   // current slot (or next upcoming if between slots)
-  let cur = schedule.find(s=> n >= s.start && n < s.end);
-  let nxt = schedule.find(s=> s.start > n);
+  // wrap-aware matching: overnight blocks (e.g. sleep 22:30 -> 05:00) cross midnight
+  const inRange = s => s.end > s.start ? (n >= s.start && n < s.end) : (n >= s.start || n < s.end);
+  let cur = schedule.find(inRange);
+  let nxt = schedule.filter(s=>s!==cur)
+    .map(s=>({s, d:(s.start - n + 1440) % 1440}))
+    .sort((a,b)=>a.d-b.d)[0]?.s;
   const actEl = document.getElementById("nowActivity");
   const cntEl = document.getElementById("nowCount");
   const subEl = document.getElementById("nowSub");
@@ -463,13 +472,16 @@ function updateNow(){
     const rowEl = [...document.querySelectorAll("#timeline .slot")].find(el=>el.querySelector(".checkbox")?.dataset.id===id);
     if(rowEl) rowEl.classList.add("now-row");
     actEl.textContent = cur.name;
-    const leftSec = Math.round((cur.end - n)*60);
+    // wrap-safe remaining time (handles overnight sleep block crossing midnight)
+    const leftSec = Math.round(((cur.end - n) % 1440 + 1440) % 1440 * 60);
     cntEl.textContent = fmtTimer(leftSec);
     subEl.textContent = "until "+fmt(cur.end);
-    fillEl.style.width = Math.min(100, ((n-cur.start)/(cur.end-cur.start))*100)+"%";
+    const total = (((cur.end - cur.start) % 1440) + 1440) % 1440 || 1;
+    const elapsed = (((n - cur.start) % 1440) + 1440) % 1440;
+    fillEl.style.width = Math.min(100, elapsed/total*100)+"%";
   } else if(nxt){
     actEl.textContent = "⏳ Free gap — next up: "+nxt.name;
-    const leftSec = Math.round((nxt.start - n)*60);
+    const leftSec = Math.round((((nxt.start - n) % 1440) + 1440) % 1440 * 60);
     cntEl.textContent = fmtTimer(leftSec);
     subEl.textContent = "until it starts";
     fillEl.style.width = "0%";
